@@ -12,11 +12,14 @@ Declare generate_default_palettes()
 Declare ResetLayer2()
 Declare DrawTileBorder(x.l, y.l, width.l, height.l)
 Declare FillRightPalette()
-
+Declare CreateTiles()
+Declare RedrawTiles()
+Declare UpdatePalette16()
 
 ; constants
 #MAX_REAL_PALETTE_COLORS = 512
 #MAX_PALETTE_COLORS = 256
+#MAX_TILES_BY_FRAME = 64
 
 #L2_PALETTE = 1
 
@@ -36,11 +39,15 @@ Declare FillRightPalette()
 #BUTTON_EXPORT_PALETTE = 12
 #CANVAS_LEFT2 = 3
 #CANVAS_LEFT3 = 4
+#CANVAS_RIGHT2 = 13
+#CANVAS_DOWN2 = 14
+#SCROLLBAR1 = 15
 
 
 ; vars & arrays
 Global Dim palette.l(#MAX_REAL_PALETTE_COLORS)
 Global Dim paletteL2.l(#MAX_PALETTE_COLORS)
+Global Dim tiles.l(#MAX_TILES_BY_FRAME)
 
 Global selected_color.l
 Global selected_palette.l
@@ -48,6 +55,9 @@ Global selectedX.l
 Global selectedY.l
 Global selected_new_color.l
 Global palette_type.l
+Global xtile.l
+Global ytile.l
+Global selected_palette16.l
 
 ; initialize palette
 generate_default_palettes()
@@ -70,6 +80,9 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
   ButtonGadget(#BUTTON_EXPORT_PALETTE, 532, 20, 96, 20, "Export Palette")
   AddGadgetItem(#PANEL, -1, "Tiles")
   CanvasGadget(#CANVAS_LEFT2, 0, 0, 256, 256, #PB_Canvas_Border)
+  CanvasGadget(#CANVAS_RIGHT2, 272, 0, 256, 256, #PB_Canvas_Border)
+  CanvasGadget(#CANVAS_DOWN2, 0, 256, 256, 16, #PB_Canvas_Border)
+  ScrollBarGadget(#SCROLLBAR1, 0, 272, 256, 16, 0, 15, 1)
   AddGadgetItem(#PANEL, -1, "TileMap")
   CanvasGadget(#CANVAS_LEFT3, 0, 0, 320, 256, #PB_Canvas_Border)
   CloseGadgetList()
@@ -82,6 +95,14 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
   
   ; reset layer2 palette
   ResetLayer2()
+  
+  ; initialize tiles
+  xtile = 0
+  ytile = 0
+  selected_palette16 = 0
+  CreateTiles()
+  RedrawTiles()
+  UpdatePalette16()
   
   Repeat
     ev = WaitWindowEvent(10)
@@ -177,6 +198,9 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
                 
                 ; show hexa code
                 SetGadgetText(#STRING, "$" + Hex(r) + Hex(g) + Hex(b))
+                
+                ; update palette 16
+                UpdatePalette16()
               EndIf
             EndIf
           Case #BUTTON1
@@ -321,6 +345,9 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
                 CloseFile(1)
               EndIf
             EndIf
+          Case #SCROLLBAR1
+            selected_palette16 = GetGadgetState(#SCROLLBAR1)
+            UpdatePalette16()
         EndSelect
     EndSelect
     
@@ -406,6 +433,7 @@ EndProcedure
 Procedure FillRightPalette()
   StartDrawing(CanvasOutput(#CANVAS_RIGHT))
   DrawingMode(#PB_2DDrawing_AllChannels)
+  
   i = 0  
   If palette_type = #PALETTE512
     For y = 0 To 255 Step 16
@@ -425,10 +453,67 @@ Procedure FillRightPalette()
   StopDrawing()
 EndProcedure
 
+Procedure CreateTiles()
+  For i = 1 To 64
+    If IsImage(i)
+      FreeImage(i)
+    EndIf
+    
+    CreateImage(i, 8, 8, 32, #PB_Image_Transparent)
+  Next
+EndProcedure
+
+Procedure RedrawTiles()
+  StartDrawing(CanvasOutput(#CANVAS_LEFT2))
+  DrawingMode(#PB_2DDrawing_AllChannels)
+  Dim c(1)
+  c(0) = RGB(255, 255, 255)
+  c(1) = RGB(128, 128, 128)
+  i = 0
+  For y = 0 To 255 Step 32
+    For x = 0 To 255 Step 32
+      Box(x, y, 32, 32, c(i))
+      i = Mod(i + 1, 2)
+    Next
+    i = Mod(i + 1, 2)
+  Next
+  StopDrawing()
+  
+  StartDrawing(CanvasOutput(#CANVAS_RIGHT2))
+  c(0) = RGB(255, 255, 255)
+  c(1) = RGB(128, 128, 128)
+  i = 0
+  j = 1
+  For y = 0 To 255 Step 32
+    For x = 0 To 255 Step 32
+      DrawingMode(#PB_2DDrawing_AllChannels)
+      Box(x, y, 32, 32, c(i))
+      ResizeImage(j, 32, 32, #PB_Image_Raw)
+      DrawingMode(#PB_2DDrawing_AlphaBlend)
+      DrawImage(ImageID(j), x, y, 32, 32)
+      i = Mod(i + 1, 2)
+      j + 1
+    Next
+    i = Mod(i + 1, 2)
+  Next
+  DrawingMode(#PB_2DDrawing_AllChannels)
+  DrawTileBorder(xtile * 32, ytile * 32, 32, 32)
+  StopDrawing()
+EndProcedure
+
+Procedure UpdatePalette16()
+  StartDrawing(CanvasOutput(#CANVAS_DOWN2))
+  DrawingMode(#PB_2DDrawing_AllChannels)
+  For x = 0 To 15
+    Box(x * 16, 0, 16, 16, paletteL2(x + (selected_palette16 * 16)))
+  Next
+  StopDrawing()  
+EndProcedure
+
 ; IDE Options = PureBasic 6.12 LTS (Windows - x64)
-; CursorPosition = 281
-; FirstLine = 262
-; Folding = -
+; CursorPosition = 84
+; FirstLine = 66
+; Folding = --
 ; EnableXP
 ; DPIAware
 ; Executable = NTM.exe
