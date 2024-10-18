@@ -1,2 +1,5 @@
 # Next Tile Machine
- A tool to draw tiles for ZX Spectrum Next
+ This is a tool to draw tiles, tilemaps and palettes for the ZX Spectrum Next.
+ It is programmed to be used in assembly z80, with hardware tiles.
+
+ Enjoy ;)
