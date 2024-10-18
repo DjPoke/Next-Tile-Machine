@@ -504,11 +504,12 @@ Procedure FillRightPalette()
 EndProcedure
 
 Procedure CreateTiles()
-  For i = 1 To 64
+  For i = 0 To 63
     selpal(i) = 0
+    
     For y = 0 To 7
       For x = 0 To 7
-        img(i, x, y) = 227
+        img(i, x, y) = 0
       Next
     Next
   Next
@@ -520,20 +521,16 @@ Procedure RedrawTileView()
   c(0) = RGBA(255, 255, 255, 255)
   c(1) = RGBA(128, 128, 128, 255)
   i = 0
-  j = 1
   For y = 0 To 255 Step 32
     For x = 0 To 255 Step 32
       DrawingMode(#PB_2DDrawing_AllChannels)
       Box(x, y, 32, 32, c(i))
-      xt.l = img(j, x / 32, y / 32)
-      yt.l = selpal(j)
+      xt.l = img(selected_img, x / 32, y / 32)
+      yt.l = selpal(selected_img)
       v.l = xt + (yt * 16)
-      If v <> 227
-        DrawingMode(#PB_2DDrawing_AlphaBlend)
-        Box(x, y, 32, 32, paletteL2(v))
-      EndIf
+      DrawingMode(#PB_2DDrawing_AlphaBlend)
+      Box(x, y, 32, 32, paletteL2(v))
       i = Mod(i + 1, 2)
-      j + 1
     Next
     i = Mod(i + 1, 2)
   Next
@@ -548,7 +545,7 @@ Procedure RedrawTiles()
   c(0) = RGBA(255, 255, 255, 255)
   c(1) = RGBA(128, 128, 128, 255)
   i = 0
-  j = 1
+  j = 0
   For y = 0 To 255 Step 32
     For x = 0 To 255 Step 32
       DrawingMode(#PB_2DDrawing_AllChannels)
@@ -556,10 +553,10 @@ Procedure RedrawTiles()
       DrawingMode(#PB_2DDrawing_AlphaBlend)
       For y2 = 0 To 7
         For x2 = 0 To 7
-          cl.l = img(j, x2, y2)
-          p.l = selpal(j)
-          v.l = cl + (p * 8)
-          Box((x /8) + x2 * 4, (y /8) + y2 * 4, 32, 32, paletteL2(v))
+          xt.l = img(j, x2, y2)
+          yt.l = selpal(j)
+          v.l = xt + (yt * 16)
+          Box(x + (x2 * 4), y + (y2 * 4), 4, 4, paletteL2(v))
         Next
       Next
       i = Mod(i + 1, 2)
@@ -582,8 +579,8 @@ Procedure UpdatePalette16()
 EndProcedure
 
 ; IDE Options = PureBasic 6.12 LTS (Windows - x64)
-; CursorPosition = 397
-; FirstLine = 386
+; CursorPosition = 533
+; FirstLine = 516
 ; Folding = --
 ; EnableXP
 ; DPIAware
