@@ -468,8 +468,8 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
                     For y = 0 To 7
                       For x = 0 To 7 Step 2
                         byte.a = ReadAsciiCharacter(1)
-                        img(i, x + 1, y) = (byte & %11110000) >> 4
-                        img(i, x, y) = byte & %00001111
+                        img(i, x, y) = (byte & %11110000) >> 4
+                        img(i, x + 1, y) = byte & %00001111
                       Next
                     Next
                   Next
@@ -494,7 +494,7 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
                 For i = 0 To 63
                   For y = 0 To 7
                     For x = 0 To 7 Step 2
-                      byte.a = (img(i, x + 1, y) << 4) | img(i, x, y)                      
+                      byte.a = (img(i, x, y) << 4) | img(i, x + 1, y)
                       WriteAsciiCharacter(1, byte)
                     Next
                   Next
@@ -720,8 +720,8 @@ Procedure UpdatePalette16()
 EndProcedure
 
 ; IDE Options = PureBasic 6.12 LTS (Windows - x64)
-; CursorPosition = 107
-; FirstLine = 93
+; CursorPosition = 471
+; FirstLine = 463
 ; Folding = --
 ; EnableXP
 ; DPIAware
