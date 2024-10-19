@@ -762,8 +762,8 @@ Procedure UpdatePalette16()
 EndProcedure
 
 ; IDE Options = PureBasic 6.12 LTS (Windows - x64)
-; CursorPosition = 547
-; FirstLine = 540
+; CursorPosition = 390
+; FirstLine = 380
 ; Folding = --
 ; EnableXP
 ; DPIAware
