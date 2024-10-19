@@ -93,10 +93,10 @@ Global map_height.l
 generate_default_palettes()
 
 ; program version
-version$ = "v0.1.0"
+version$ = "v0.1.1"
 
 ; open the window
-If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Window_ScreenCentered|#PB_Window_MinimizeGadget)
+If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Window_ScreenCentered|#PB_Window_MinimizeGadget)
   ; add gadgets
   PanelGadget(#PANEL, 0, 0, 640, 480)
   AddGadgetItem(#PANEL, -1, "Palettes")
@@ -969,8 +969,8 @@ Procedure RedrawMap()
 EndProcedure
 
 ; IDE Options = PureBasic 6.12 LTS (Windows - x64)
-; CursorPosition = 670
-; FirstLine = 658
+; CursorPosition = 95
+; FirstLine = 90
 ; Folding = --
 ; EnableXP
 ; DPIAware
