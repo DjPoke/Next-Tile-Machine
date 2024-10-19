@@ -662,7 +662,11 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
               EndIf
             EndIf
             
-            ResetLayer2()
+            SetGadgetAttribute(#SCROLLAREA3, #PB_ScrollArea_InnerWidth, 16 * map_width)
+            SetGadgetAttribute(#SCROLLAREA3, #PB_ScrollArea_InnerHeight, 16 * map_height)
+            SetGadgetAttribute(#SCROLLAREA3, #PB_ScrollArea_ScrollStep, 16)
+            ResizeGadget(#CANVAS_LEFT3, 0, 0, 16 * map_width, 16 * map_height)
+            RedrawMap()
           Case #BUTTON_EXPORT_TILEMAP
             f$ = SaveFileRequester("Export TileMap...", "", "*.map", 0)
             
@@ -923,7 +927,7 @@ Procedure RedrawMap()
           xt.l = img(t, x2, y2)
           sp.l = selpal(t)
           v.l = xt + (sp * 16)
-          Box((x * 16) + x2, (y * 16) + y2, 16, 16, paletteL2(v))
+          Box((x * 2) + x2, (y * 2) + y2, 2, 2, paletteL2(v))
         Next
       Next
     Next
@@ -932,8 +936,8 @@ Procedure RedrawMap()
 EndProcedure
 
 ; IDE Options = PureBasic 6.12 LTS (Windows - x64)
-; CursorPosition = 656
-; FirstLine = 648
+; CursorPosition = 929
+; FirstLine = 918
 ; Folding = --
 ; EnableXP
 ; DPIAware
