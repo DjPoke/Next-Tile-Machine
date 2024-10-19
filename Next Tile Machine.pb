@@ -51,6 +51,9 @@ Declare RedrawTileView()
 #BUTTON7 = 21
 #BUTTON8 = 22
 #BUTTON9 = 23
+#BUTTON10 = 24
+#BUTTON11 = 25
+#BUTTON12 = 26
 
 ; vars & arrays
 Global Dim palette.l(#MAX_REAL_PALETTE_COLORS)
@@ -101,6 +104,9 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
   ButtonGadget(#BUTTON7, 312, 256, 40, 20, "Copy")
   ButtonGadget(#BUTTON8, 352, 256, 40, 20, "Paste")
   ButtonGadget(#BUTTON9, 392, 256, 40, 20, "Delete")
+  ButtonGadget(#BUTTON10, 432, 256, 100, 20, "Rotate")
+  ButtonGadget(#BUTTON11, 432, 276, 50, 20, "Mirror X")
+  ButtonGadget(#BUTTON12, 482, 276, 50, 20, "Mirror Y")
   AddGadgetItem(#PANEL, -1, "TileMap")
   CanvasGadget(#CANVAS_LEFT3, 0, 0, 320, 256, #PB_Canvas_Border)
   CloseGadgetList()
@@ -536,6 +542,42 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
             Next
             
             RedrawTiles()
+          Case #BUTTON10
+            For y = 0 To 7
+              For x = 0 To 7
+                cb(7 - y, x) = img(selected_img, x, y)
+              Next
+            Next
+            
+            For y = 0 To 7
+              For x = 0 To 7
+                img(selected_img, x, y) = cb(x, y)
+              Next
+            Next
+            
+            RedrawTiles()
+          Case #BUTTON11
+            For y = 0 To 7
+              For x = 0 To 3
+                vleft.l = img(selected_img, x, y)
+                vright.l = img(selected_img, 7 - x, y)
+                img(selected_img, x, y) = vright
+                img(selected_img, 7 - x, y) = vleft
+              Next
+            Next
+            
+            RedrawTiles()
+          Case #BUTTON12
+            For x = 0 To 7
+              For y = 0 To 3
+                vup.l = img(selected_img, x, y)
+                vdown.l = img(selected_img, x, 7 - y)
+                img(selected_img, x, y) = vdown
+                img(selected_img, x, 7 - y) = vup
+              Next
+            Next
+            
+            RedrawTiles()
         EndSelect
     EndSelect
     
@@ -720,8 +762,8 @@ Procedure UpdatePalette16()
 EndProcedure
 
 ; IDE Options = PureBasic 6.12 LTS (Windows - x64)
-; CursorPosition = 471
-; FirstLine = 463
+; CursorPosition = 547
+; FirstLine = 540
 ; Folding = --
 ; EnableXP
 ; DPIAware
