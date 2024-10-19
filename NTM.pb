@@ -43,7 +43,10 @@ Declare RedrawTileView()
 #CANVAS_RIGHT2 = 13
 #CANVAS_DOWN2 = 14
 #SCROLLBAR1 = 15
-
+#BUTTON4 = 16
+#BUTTON5 = 17
+#BUTTON_IMPORT_TILES = 18
+#BUTTON_EXPORT_TILES = 19
 
 ; vars & arrays
 Global Dim palette.l(#MAX_REAL_PALETTE_COLORS)
@@ -83,9 +86,11 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
   ButtonGadget(#BUTTON_IMPORT_PALETTE, 532, 0, 96, 20, "Import Palette")
   ButtonGadget(#BUTTON_EXPORT_PALETTE, 532, 20, 96, 20, "Export Palette")
   AddGadgetItem(#PANEL, -1, "Tiles")
-  CanvasGadget(#CANVAS_LEFT2, 0, 0, 256, 256, #PB_Canvas_Border)
-  CanvasGadget(#CANVAS_RIGHT2, 272, 0, 256, 256, #PB_Canvas_Border)
+  CanvasGadget(#CANVAS_LEFT2, 0, 0, 256, 256)
+  CanvasGadget(#CANVAS_RIGHT2, 272, 0, 256, 256)
   CanvasGadget(#CANVAS_DOWN2, 0, 256, 256, 16)
+  ButtonGadget(#BUTTON_IMPORT_TILES, 532, 0, 96, 20, "Import Tiles")
+  ButtonGadget(#BUTTON_EXPORT_TILES, 532, 20, 96, 20, "Export Tiles")
   ScrollBarGadget(#SCROLLBAR1, 0, 272, 256, 16, 0, 15, 1)
   AddGadgetItem(#PANEL, -1, "TileMap")
   CanvasGadget(#CANVAS_LEFT3, 0, 0, 320, 256, #PB_Canvas_Border)
@@ -217,6 +222,8 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
           Case #BUTTON1
             generate_default_palettes()
             ResetLayer2()
+            RedrawTiles()
+            UpdatePalette16()
           Case #BUTTON2
             hexa_color.s = GetGadgetText(#STRING)
             
@@ -282,12 +289,15 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
               MessageRequester("Error", "Missing $ before hexa number!", #PB_MessageRequester_Error)
             EndIf
           Case #BUTTON3
+            generate_default_palettes()
+            ResetLayer2()
+
             If palette_type = #PALETTE512
-              palette_type = #PALETTE256              
-              SetGadgetText(#BUTTON3, "8 bits colors (512)")
+              palette_type = #PALETTE256
+              SetGadgetText(#BUTTON3, "8 bits colors (256)")
             Else
               palette_type = #PALETTE512
-              SetGadgetText(#BUTTON3, "9 bits colors (256)")
+              SetGadgetText(#BUTTON3, "9 bits colors (512)")
             EndIf
             
             FillRightPalette()
@@ -296,30 +306,47 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
             f$ = OpenFileRequester("Import Palette...", "", "*.pal", 0)
             
             If f$ <> ""
+              If GetExtensionPart(f$) = ""
+                f$ = f$ + ".pal"
+              EndIf
+              
               If ReadFile(1, f$, #PB_Ascii)
-                If palette_type = #PALETTE512
-                  If Lof(1) = 512
-                    For i = 0 To 255
-                      col_rrrgggbb.a = ReadAsciiCharacter(1)
-                      col_b.a = ReadAsciiCharacter(1)
-                      col_rrrgggbbb.w = (col_rrrgggbb << 1) | col_b
-                      paletteL2(i) = palette(col_rrrgggbbb)
-                    Next
-                  Else
-                    MessageRequester("Error", "Not a recognised palette!", #PB_MessageRequester_Error)
-                  EndIf
+                If Lof(1) = 512
+                  For i = 0 To 255
+                    col8.a = ReadAsciiCharacter(1)
+                    col1.a = ReadAsciiCharacter(1)
+                    col9.w = (col8 << 1) | col1
+                    paletteL2(i) = palette(col9)
+                  Next
+                  
+                  palette_type = #PALETTE512
+                ElseIf Lof(1) = 256
+                  For i = 0 To 255
+                    col8.a = ReadAsciiCharacter(1)
+                    j.l = col8 * 2
+                    paletteL2(i) = palette(j)
+                  Next
+                  
+                  palette_type = #PALETTE256
                 Else
-                  If Lof(1) = 256
-                    For i = 0 To 255
-                      j.a = ReadAsciiCharacter(1)
-                      m.l = j
-                      m * 2
-                      paletteL2(i) = palette(m)
-                    Next
-                  EndIf                  
+                  MessageRequester("Error", "Not a recognised palette!", #PB_MessageRequester_Error)
                 EndIf
                 
                 CloseFile(1)
+                
+                If palette_type = #PALETTE512
+                  SetGadgetText(#BUTTON3, "9 bits colors (512)")
+                Else
+                  SetGadgetText(#BUTTON3, "8 bits colors (256)")
+                EndIf
+                
+                FillRightPalette()
+                ResetLayer2()                
+                                
+                selected_img = 0
+                selected_pen = 0
+                RedrawTiles()
+                UpdatePalette16()
               EndIf
             EndIf
             
@@ -327,8 +354,11 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
           Case #BUTTON_EXPORT_PALETTE
             f$ = SaveFileRequester("Export Palette...", "", "*.pal", 0)
             
-            
             If f$ <> ""
+              If GetExtensionPart(f$) = ""
+                f$ = f$ + ".pal"
+              EndIf
+              
               If CreateFile(1, f$, #PB_Ascii)
                 If palette_type = #PALETTE512
                   For i = 0 To 255
@@ -342,10 +372,9 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
                   Next
                 Else
                   For i = 0 To 255
-                    For j = 0 To 511 Step 2
-                      If paletteL2(i) = palette(j)
-                        k.a = j / 2
-                        k = k % 11111111
+                    For j = 0 To 255
+                      If paletteL2(i) = palette(j * 2)
+                        k.a = j
                         WriteAsciiCharacter(1, k)
                         Break
                       EndIf
@@ -358,12 +387,14 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
             EndIf
           Case #SCROLLBAR1
             selected_palette16 = GetGadgetState(#SCROLLBAR1)
+            selpal(selected_img) = selected_palette16
             UpdatePalette16()
+            RedrawTiles()
                             
             StartDrawing(CanvasOutput(#CANVAS_DOWN2))
             DrawingMode(#PB_2DDrawing_AllChannels)
             DrawTileBorder(selected_pen * 16, 0, 16, 16)
-            StopDrawing()
+            StopDrawing()            
           Case #CANVAS_DOWN2
             If et = #PB_EventType_LeftClick
               xm.l = WindowMouseX(#WINDOW)
@@ -396,6 +427,71 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
                 
                 img(selected_img, xt, yt) = selected_pen
                 RedrawTiles()
+              EndIf
+            EndIf
+          Case #CANVAS_RIGHT2
+            If et = #PB_EventType_LeftClick
+              xm.l = WindowMouseX(#WINDOW)
+              ym.l = WindowMouseY(#WINDOW)
+              
+              If xm >= 0 And ym >= 0
+                xm - GadgetX(#CANVAS_RIGHT2, #PB_Gadget_WindowCoordinate) - GadgetX(1, #PB_Gadget_WindowCoordinate)
+                ym - GadgetY(#CANVAS_RIGHT2, #PB_Gadget_WindowCoordinate) - GadgetY(1, #PB_Gadget_WindowCoordinate)
+                
+                xt.l = xm / 32
+                yt.l = ym / 32
+                
+                selected_img = xt + (yt * 8)
+                RedrawTiles()
+              EndIf
+            EndIf
+          Case #BUTTON_IMPORT_TILES
+            f$ = OpenFileRequester("Import Tiles...", "", "*.spr", 0)
+            
+            If f$ <> ""
+              If GetExtensionPart(f$) = ""
+                f$ = f$ + ".spr"
+              EndIf
+              
+              If ReadFile(1, f$, #PB_Ascii)
+                If Lof(1) = 64 * (8 * 8) / 2
+                  For i = 0 To 63
+                    For y = 0 To 7
+                      For x = 0 To 7 Step 2
+                        byte.a = ReadAsciiCharacter(1)
+                        img(i, x + 1, y) = (byte & %11110000) >> 4
+                        img(i, x, y) = byte & %00001111
+                      Next
+                    Next
+                  Next
+                Else
+                  MessageRequester("Error", "Not a recognised set of tiles!", #PB_MessageRequester_Error)
+                EndIf
+                
+                CloseFile(1)
+              EndIf
+            EndIf
+            
+            ResetLayer2()
+          Case #BUTTON_EXPORT_TILES
+            f$ = SaveFileRequester("Export Tiles...", "", "*.spr", 0)
+            
+            If f$ <> ""
+              If GetExtensionPart(f$) = ""
+                f$ = f$ + ".spr"
+              EndIf
+              
+              If CreateFile(1, f$, #PB_Ascii)
+                For i = 0 To 63
+                  For y = 0 To 7
+                    For x = 0 To 7 Step 2
+                      byte.a = (img(i, x + 1, y) << 4) | img(i, x, y)                      
+                      WriteAsciiCharacter(1, byte)
+                    Next
+                  Next
+                Next
+                
+                CloseFile(1)
               EndIf
             EndIf
         EndSelect
@@ -526,8 +622,8 @@ Procedure RedrawTileView()
       DrawingMode(#PB_2DDrawing_AllChannels)
       Box(x, y, 32, 32, c(i))
       xt.l = img(selected_img, x / 32, y / 32)
-      yt.l = selpal(selected_img)
-      v.l = xt + (yt * 16)
+      sp.l = selpal(selected_img)
+      v.l = xt + (sp * 16)
       DrawingMode(#PB_2DDrawing_AlphaBlend)
       Box(x, y, 32, 32, paletteL2(v))
       i = Mod(i + 1, 2)
@@ -554,8 +650,8 @@ Procedure RedrawTiles()
       For y2 = 0 To 7
         For x2 = 0 To 7
           xt.l = img(j, x2, y2)
-          yt.l = selpal(j)
-          v.l = xt + (yt * 16)
+          sp.l = selpal(selected_img)
+          v.l = xt + (sp * 16)
           Box(x + (x2 * 4), y + (y2 * 4), 4, 4, paletteL2(v))
         Next
       Next
@@ -564,8 +660,10 @@ Procedure RedrawTiles()
     Next
     i = Mod(i + 1, 2)
   Next
+  yt.l = selected_img / 8
+  xt.l = selected_img - (yt * 8)
   DrawingMode(#PB_2DDrawing_AllChannels)
-  DrawTileBorder(xtile * 32, ytile * 32, 32, 32)
+  DrawTileBorder(xt * 32, yt * 32, 32, 32)
   StopDrawing()
 EndProcedure
 
@@ -573,14 +671,15 @@ Procedure UpdatePalette16()
   StartDrawing(CanvasOutput(#CANVAS_DOWN2))
   DrawingMode(#PB_2DDrawing_AllChannels)
   For x = 0 To 15
-    Box(x * 16, 0, 16, 16, paletteL2(x + (selected_palette16 * 16)))
+    xt.l = x + (selected_palette16 * 16)
+    Box(x * 16, 0, 16, 16, paletteL2(xt))
   Next
   StopDrawing()  
 EndProcedure
 
 ; IDE Options = PureBasic 6.12 LTS (Windows - x64)
-; CursorPosition = 533
-; FirstLine = 516
+; CursorPosition = 348
+; FirstLine = 333
 ; Folding = --
 ; EnableXP
 ; DPIAware
