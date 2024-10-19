@@ -683,4 +683,5 @@ EndProcedure
 ; Folding = --
 ; EnableXP
 ; DPIAware
-; Executable = NTM.exe
+; UseIcon = icon.ico
+; Executable = Next Tile Machine.exe
