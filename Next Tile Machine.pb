@@ -292,40 +292,57 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
                   value_green.l = Val("$" + Mid(hexa_color_real, 2, 1))
                   value_blue.l = Val("$" + Mid(hexa_color_real, 3, 1))
                   
-                  For i = 0 To 511
-                    If value_red = Red(palette(i)) >> 4
-                      If value_green = Green(palette(i)) >> 4
-                        If value_blue = Blue(palette(i)) >> 4
-                          yt.l = selected_new_color / 32
-                          xt.l = selected_new_color - (yt * 32)
-                          
-                          StartDrawing(CanvasOutput(#CANVAS_RIGHT))
-                          DrawingMode(#PB_2DDrawing_AllChannels)
-                          Box(xt * 8, yt * 16, 8, 16, palette(selected_new_color))
-                          StopDrawing()
-                          
-                          selected_new_color = i
-                          yt.l = selected_new_color / 32
-                          xt.l = selected_new_color - (yt * 32)
-                          
-                          StartDrawing(CanvasOutput(#CANVAS_RIGHT))
-                          DrawingMode(#PB_2DDrawing_AllChannels)
-                          DrawTileBorder(xt * 8, yt * 16, 8, 16)
-                          StopDrawing()
-                          
-                          ; update left palettes
-                          StartDrawing(CanvasOutput(#CANVAS_LEFT))
-                          DrawingMode(#PB_2DDrawing_AllChannels)
-                          paletteL2(selected_color) = palette(selected_new_color)
-                          Box(selectedX * 16, selectedY * 16, 16, 16, paletteL2(selected_color))
-                          DrawTileBorder(selectedX * 16, selectedY * 16, 16, 16)
-                          StopDrawing()
-                          
-                          Break
+                  ptr.l = 0
+                  
+                  While value_red >= 0 And value_green >= 0 And value_blue >= 0
+                    For i = 0 To 511
+                      If value_red = Red(palette(i)) >> 4
+                        If value_green = Green(palette(i)) >> 4
+                          If value_blue = Blue(palette(i)) >> 4
+                            yt.l = selected_new_color / 32
+                            xt.l = selected_new_color - (yt * 32)
+                            
+                            StartDrawing(CanvasOutput(#CANVAS_RIGHT))
+                            DrawingMode(#PB_2DDrawing_AllChannels)
+                            Box(xt * 8, yt * 16, 8, 16, palette(selected_new_color))
+                            StopDrawing()
+                            
+                            selected_new_color = i
+                            yt.l = selected_new_color / 32
+                            xt.l = selected_new_color - (yt * 32)
+                            
+                            StartDrawing(CanvasOutput(#CANVAS_RIGHT))
+                            DrawingMode(#PB_2DDrawing_AllChannels)
+                            DrawTileBorder(xt * 8, yt * 16, 8, 16)
+                            StopDrawing()
+                            
+                            ; update left palettes
+                            StartDrawing(CanvasOutput(#CANVAS_LEFT))
+                            DrawingMode(#PB_2DDrawing_AllChannels)
+                            paletteL2(selected_color) = palette(selected_new_color)
+                            Box(selectedX * 16, selectedY * 16, 16, 16, paletteL2(selected_color))
+                            DrawTileBorder(selectedX * 16, selectedY * 16, 16, 16)
+                            StopDrawing()
+                            
+                            SetGadgetText(#STRING, "$" + Hex(value_red) + Hex(value_green) + Hex(value_blue))
+                            
+                            Break(2)
+                          EndIf
                         EndIf
                       EndIf
-                    EndIf
-                  Next
+                    Next
+                    
+                    Select ptr
+                      Case 0
+                        value_red - 1
+                      Case 1
+                        value_green - 1
+                      Case 2
+                        value_blue - 1
+                    EndSelect                    
+                    
+                    ptr = Mod(ptr + 1, 3)
+                  Wend
                 EndIf
               Else
                 MessageRequester("Error", "Hexa number wrong format!", #PB_MessageRequester_Error)
@@ -696,7 +713,8 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
                   For x = 0 To map_width - 1
                     byte.a = tilemap(x, y) %00111111
                     If GetGadgetState(#CHECKBOX) = #PB_Checkbox_Checked
-                      WriteAsciiCharacter(1, 0)
+                      
+                      WriteAsciiCharacter(1, selpal(tilemap(x, y)) << 4)
                     EndIf
                     WriteAsciiCharacter(1, byte)
                   Next
@@ -969,8 +987,8 @@ Procedure RedrawMap()
 EndProcedure
 
 ; IDE Options = PureBasic 6.12 LTS (Windows - x64)
-; CursorPosition = 717
-; FirstLine = 705
+; CursorPosition = 326
+; FirstLine = 311
 ; Folding = --
 ; EnableXP
 ; DPIAware
