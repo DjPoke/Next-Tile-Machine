@@ -65,6 +65,7 @@ Declare RedrawMap()
 #SPIN2 = 32
 #SCROLLAREA3 = 33
 #LABEL = 34
+#CHECKBOX = 35
 
 ; vars & arrays
 Global Dim palette.l(#MAX_REAL_PALETTE_COLORS)
@@ -131,7 +132,8 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
   ButtonGadget(#BUTTON_EXPORT_TILEMAP, 532, 40, 100, 20, "Export TileMap")
   SpinGadget(#SPIN1, 532, 80, 100, 20, 1, 256, #PB_Spin_Numeric)
   SpinGadget(#SPIN2, 532, 100, 100, 20, 1, 256, #PB_Spin_Numeric)
-  TextGadget(#LABEL, 64, 256, 128, 25, "", #PB_Text_Border)
+  TextGadget(#LABEL, 0, 256, 128, 25, "", #PB_Text_Border)
+  CheckBoxGadget(#CHECKBOX, 128, 256, 128, 20, "Export 2 bytes")
   CloseGadgetList()
   
   ; 9 bits palette by default
@@ -653,12 +655,24 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
               EndIf
 
               If ReadFile(1, f$, #PB_Ascii)
-                For y = 0 To map_height - 1
-                  For x = 0 To map_width - 1
-                    byte.a = ReadAsciiCharacter(1)
-                    tilemap(x, y) = ReadAsciiCharacter(1)                   
+                If Lof(1) = map_width * map_height * 2
+                  SetGadgetState(#CHECKBOX, #PB_Checkbox_Checked)
+                  For y = 0 To map_height - 1
+                    For x = 0 To map_width - 1
+                      byte.a = ReadAsciiCharacter(1)
+                      tilemap(x, y) = ReadAsciiCharacter(1)                   
+                    Next
                   Next
-                Next
+                ElseIf  Lof(1) = map_width * map_height
+                  SetGadgetState(#CHECKBOX, #PB_Checkbox_Unchecked)
+                  For y = 0 To map_height - 1
+                    For x = 0 To map_width - 1
+                      tilemap(x, y) = ReadAsciiCharacter(1)
+                    Next
+                  Next
+                Else
+                  MessageRequester("Error", "Wrong TileMap!", #PB_MessageRequester_Error)
+                EndIf
                 
                 CloseFile(1)
               EndIf
@@ -681,7 +695,9 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
                 For y = 0 To map_height - 1
                   For x = 0 To map_width - 1
                     byte.a = tilemap(x, y) %00111111
-                    WriteAsciiCharacter(1, 0)
+                    If GetGadgetState(#CHECKBOX) = #PB_Checkbox_Checked
+                      WriteAsciiCharacter(1, 0)
+                    EndIf
                     WriteAsciiCharacter(1, byte)
                   Next
                 Next
@@ -953,8 +969,8 @@ Procedure RedrawMap()
 EndProcedure
 
 ; IDE Options = PureBasic 6.12 LTS (Windows - x64)
-; CursorPosition = 716
-; FirstLine = 705
+; CursorPosition = 670
+; FirstLine = 658
 ; Folding = --
 ; EnableXP
 ; DPIAware
