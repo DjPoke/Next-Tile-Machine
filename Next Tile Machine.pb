@@ -714,8 +714,8 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
                 xm - GadgetX(eg, #PB_Gadget_WindowCoordinate) - GadgetX(1, #PB_Gadget_WindowCoordinate)
                 ym - GadgetY(eg, #PB_Gadget_WindowCoordinate) - GadgetY(1, #PB_Gadget_WindowCoordinate)
                 
-                xt.l = (xm / 16) + GetGadgetAttribute(#SCROLLAREA3, #PB_ScrollArea_X)
-                yt.l = (ym / 16) + GetGadgetAttribute(#SCROLLAREA3, #PB_ScrollArea_Y)
+                xt.l = (xm / 16)
+                yt.l = (ym / 16)
                 
                 tilemap(xt, yt) = selected_img
                 RedrawMap()
@@ -969,8 +969,8 @@ Procedure RedrawMap()
 EndProcedure
 
 ; IDE Options = PureBasic 6.12 LTS (Windows - x64)
-; CursorPosition = 95
-; FirstLine = 90
+; CursorPosition = 717
+; FirstLine = 705
 ; Folding = --
 ; EnableXP
 ; DPIAware
