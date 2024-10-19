@@ -47,12 +47,17 @@ Declare RedrawTileView()
 #BUTTON5 = 17
 #BUTTON_IMPORT_TILES = 18
 #BUTTON_EXPORT_TILES = 19
+#BUTTON6 = 20
+#BUTTON7 = 21
+#BUTTON8 = 22
+#BUTTON9 = 23
 
 ; vars & arrays
 Global Dim palette.l(#MAX_REAL_PALETTE_COLORS)
 Global Dim paletteL2.l(#MAX_PALETTE_COLORS)
 Global Dim img.l(#MAX_TILES_BY_FRAME, 8, 8)
 Global Dim selpal.l(#MAX_TILES_BY_FRAME)
+Global Dim cb.l(8, 8)
 
 Global selected_color.l
 Global selected_palette.l
@@ -92,6 +97,10 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
   ButtonGadget(#BUTTON_IMPORT_TILES, 532, 0, 96, 20, "Import Tiles")
   ButtonGadget(#BUTTON_EXPORT_TILES, 532, 20, 96, 20, "Export Tiles")
   ScrollBarGadget(#SCROLLBAR1, 0, 272, 256, 16, 0, 15, 1)
+  ButtonGadget(#BUTTON6, 272, 256, 40, 20, "Cut")
+  ButtonGadget(#BUTTON7, 312, 256, 40, 20, "Copy")
+  ButtonGadget(#BUTTON8, 352, 256, 40, 20, "Paste")
+  ButtonGadget(#BUTTON9, 392, 256, 40, 20, "Delete")
   AddGadgetItem(#PANEL, -1, "TileMap")
   CanvasGadget(#CANVAS_LEFT3, 0, 0, 320, 256, #PB_Canvas_Border)
   CloseGadgetList()
@@ -494,6 +503,39 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
                 CloseFile(1)
               EndIf
             EndIf
+          Case #BUTTON6
+            For y = 0 To 7
+              For x = 0 To 7
+                cb(x, y) = img(selected_img, x, y)
+                img(selected_img, x, y) = 0
+              Next
+            Next
+            
+            RedrawTiles()
+          Case #BUTTON7
+            ClearClipboard()
+            
+            For y = 0 To 7
+              For x = 0 To 7
+                cb(x, y) = img(selected_img, x, y)
+              Next
+            Next
+          Case #BUTTON8
+            For y = 0 To 7
+              For x = 0 To 7
+                img(selected_img, x, y) = cb(x, y)
+              Next
+            Next
+            
+            RedrawTiles()
+          Case #BUTTON9
+            For y = 0 To 7
+              For x = 0 To 7
+                img(selected_img, x, y) = 0
+              Next
+            Next
+            
+            RedrawTiles()
         EndSelect
     EndSelect
     
@@ -678,8 +720,8 @@ Procedure UpdatePalette16()
 EndProcedure
 
 ; IDE Options = PureBasic 6.12 LTS (Windows - x64)
-; CursorPosition = 348
-; FirstLine = 333
+; CursorPosition = 107
+; FirstLine = 93
 ; Folding = --
 ; EnableXP
 ; DPIAware
