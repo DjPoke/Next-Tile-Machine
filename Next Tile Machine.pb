@@ -16,6 +16,7 @@ Declare CreateTiles()
 Declare RedrawTiles()
 Declare UpdatePalette16()
 Declare RedrawTileView()
+Declare RedrawMap()
 
 ; constants
 #MAX_REAL_PALETTE_COLORS = 512
@@ -27,9 +28,11 @@ Declare RedrawTileView()
 #PALETTE512 = 1
 #PALETTE256 = 2
 
+#MAX_MAP_WIDTH = 256
+#MAX_MAP_HEIGHT = 256
+
 #WINDOW = 0
 #PANEL = 1
-
 #CANVAS_LEFT = 2
 #CANVAS_RIGHT = 5
 #BUTTON1 = 6
@@ -54,6 +57,13 @@ Declare RedrawTileView()
 #BUTTON10 = 24
 #BUTTON11 = 25
 #BUTTON12 = 26
+#CANVAS_RIGHT3 = 27
+#BUTTON13 = 28
+#BUTTON_IMPORT_TILEMAP = 29
+#BUTTON_EXPORT_TILEMAP = 30
+#SPIN1 = 31
+#SPIN2 = 32
+#SCROLLAREA3 = 33
 
 ; vars & arrays
 Global Dim palette.l(#MAX_REAL_PALETTE_COLORS)
@@ -61,6 +71,7 @@ Global Dim paletteL2.l(#MAX_PALETTE_COLORS)
 Global Dim img.l(#MAX_TILES_BY_FRAME, 8, 8)
 Global Dim selpal.l(#MAX_TILES_BY_FRAME)
 Global Dim cb.l(8, 8)
+Global Dim tilemap.l(#MAX_MAP_WIDTH, #MAX_MAP_HEIGHT)
 
 Global selected_color.l
 Global selected_palette.l
@@ -73,6 +84,8 @@ Global ytile.l
 Global selected_palette16.l
 Global selected_pen.l
 Global selected_img.l
+Global map_width.l
+Global map_height.l
 
 ; initialize palette
 generate_default_palettes()
@@ -108,7 +121,15 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
   ButtonGadget(#BUTTON11, 432, 276, 50, 20, "Mirror X")
   ButtonGadget(#BUTTON12, 482, 276, 50, 20, "Mirror Y")
   AddGadgetItem(#PANEL, -1, "TileMap")
-  CanvasGadget(#CANVAS_LEFT3, 0, 0, 320, 256, #PB_Canvas_Border)
+  ScrollAreaGadget(#SCROLLAREA3, 0, 0, 256, 256, 256, 256, 16, #PB_ScrollArea_Flat)
+  CanvasGadget(#CANVAS_LEFT3, 0, 0, 256, 256)
+  CloseGadgetList()
+  CanvasGadget(#CANVAS_RIGHT3, 272, 0, 256, 256)
+  ButtonGadget(#BUTTON13, 532, 0, 100, 20, "New TileMap")
+  ButtonGadget(#BUTTON_IMPORT_TILEMAP, 532, 20, 100, 20, "Import TileMap")
+  ButtonGadget(#BUTTON_EXPORT_TILEMAP, 532, 40, 100, 20, "Export TileMap")
+  SpinGadget(#SPIN1, 532, 80, 100, 20, 1, 256, #PB_Spin_Numeric)
+  SpinGadget(#SPIN2, 532, 100, 100, 20, 1, 256, #PB_Spin_Numeric)
   CloseGadgetList()
   
   ; 9 bits palette by default
@@ -129,6 +150,11 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
   CreateTiles()
   RedrawTiles()
   UpdatePalette16()
+  
+  SetGadgetText(#SPIN1, "")
+  SetGadgetText(#SPIN2, "")
+  DisableGadget(#SPIN1, #True)
+  DisableGadget(#SPIN2, #True)
   
   StartDrawing(CanvasOutput(#CANVAS_DOWN2))
   DrawingMode(#PB_2DDrawing_AllChannels)
@@ -152,8 +178,8 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
               ym.l = WindowMouseY(#WINDOW)
               
               If xm >= 0 And ym >= 0
-                xm - GadgetX(#CANVAS_LEFT, #PB_Gadget_WindowCoordinate) - GadgetX(1, #PB_Gadget_WindowCoordinate)
-                ym - GadgetY(#CANVAS_LEFT, #PB_Gadget_WindowCoordinate) - GadgetY(1, #PB_Gadget_WindowCoordinate)
+                xm - GadgetX(eg, #PB_Gadget_WindowCoordinate) - GadgetX(1, #PB_Gadget_WindowCoordinate)
+                ym - GadgetY(eg, #PB_Gadget_WindowCoordinate) - GadgetY(1, #PB_Gadget_WindowCoordinate)
                 
                 xt.l = Round(xm / 16, #PB_Round_Down)
                 yt.l = Round(ym / 16, #PB_Round_Down)
@@ -177,8 +203,8 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
               ym.l = WindowMouseY(#WINDOW)
               
               If xm >= 0 And ym >= 0
-                xm - GadgetX(#CANVAS_RIGHT, #PB_Gadget_WindowCoordinate) - GadgetX(1, #PB_Gadget_WindowCoordinate)
-                ym - GadgetY(#CANVAS_RIGHT, #PB_Gadget_WindowCoordinate) - GadgetY(1, #PB_Gadget_WindowCoordinate)
+                xm - GadgetX(eg, #PB_Gadget_WindowCoordinate) - GadgetX(1, #PB_Gadget_WindowCoordinate)
+                ym - GadgetY(eg, #PB_Gadget_WindowCoordinate) - GadgetY(1, #PB_Gadget_WindowCoordinate)
                 
                 xt.l = Round(xm / (8 * palette_type), #PB_Round_Down)
                 yt.l = Round(ym / 16, #PB_Round_Down)
@@ -416,7 +442,7 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
               ym.l = WindowMouseY(#WINDOW)
               
               If xm >= 0 And ym >= 0
-                xm - GadgetX(#CANVAS_DOWN2, #PB_Gadget_WindowCoordinate) - GadgetX(1, #PB_Gadget_WindowCoordinate)
+                xm - GadgetX(eg, #PB_Gadget_WindowCoordinate) - GadgetX(1, #PB_Gadget_WindowCoordinate)
                 xt.l = Round(xm / 16, #PB_Round_Down)
                 
                 selected_pen = xt
@@ -429,13 +455,13 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
               EndIf
             EndIf
           Case #CANVAS_LEFT2
-            If GetGadgetAttribute(#CANVAS_LEFT2, #PB_Canvas_Buttons) = #PB_Canvas_LeftButton
+            If GetGadgetAttribute(eg, #PB_Canvas_Buttons) = #PB_Canvas_LeftButton
               xm.l = WindowMouseX(#WINDOW)
               ym.l = WindowMouseY(#WINDOW)
               
               If xm >= 0 And ym >= 0
-                xm - GadgetX(#CANVAS_LEFT2, #PB_Gadget_WindowCoordinate) - GadgetX(1, #PB_Gadget_WindowCoordinate)
-                ym - GadgetY(#CANVAS_LEFT2, #PB_Gadget_WindowCoordinate) - GadgetY(1, #PB_Gadget_WindowCoordinate)
+                xm - GadgetX(eg, #PB_Gadget_WindowCoordinate) - GadgetX(1, #PB_Gadget_WindowCoordinate)
+                ym - GadgetY(eg, #PB_Gadget_WindowCoordinate) - GadgetY(1, #PB_Gadget_WindowCoordinate)
                 
                 xt.l = xm / 32
                 yt.l = ym / 32
@@ -444,14 +470,14 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
                 RedrawTiles()
               EndIf
             EndIf
-          Case #CANVAS_RIGHT2
+          Case #CANVAS_RIGHT2, #CANVAS_RIGHT3
             If et = #PB_EventType_LeftClick
               xm.l = WindowMouseX(#WINDOW)
               ym.l = WindowMouseY(#WINDOW)
               
               If xm >= 0 And ym >= 0
-                xm - GadgetX(#CANVAS_RIGHT2, #PB_Gadget_WindowCoordinate) - GadgetX(1, #PB_Gadget_WindowCoordinate)
-                ym - GadgetY(#CANVAS_RIGHT2, #PB_Gadget_WindowCoordinate) - GadgetY(1, #PB_Gadget_WindowCoordinate)
+                xm - GadgetX(eg, #PB_Gadget_WindowCoordinate) - GadgetX(1, #PB_Gadget_WindowCoordinate)
+                ym - GadgetY(eg, #PB_Gadget_WindowCoordinate) - GadgetY(1, #PB_Gadget_WindowCoordinate)
                 
                 xt.l = xm / 32
                 yt.l = ym / 32
@@ -578,6 +604,101 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
             Next
             
             RedrawTiles()
+          Case #BUTTON13
+            w$ = InputRequester("TileMap Width", "Please input the TileMap Width...", "64", #WINDOW)
+            h$ = InputRequester("TileMap Height", "Please input the TileMap Height...", "64", #WINDOW)
+            
+            map_width = Val(w$)
+            map_height = Val(h$)
+            
+            If map_width > 0 And map_width <= #MAX_MAP_WIDTH
+              If map_height > 0 And map_height <= #MAX_MAP_HEIGHT
+                SetGadgetText(#SPIN1, w$)
+                SetGadgetText(#SPIN2, h$)
+              EndIf
+            EndIf
+            
+            For y = 0 To map_height - 1
+              For x = 0 To map_width - 1
+                tilemap(x, y) = 0
+              Next
+            Next
+            
+            SetGadgetAttribute(#SCROLLAREA3, #PB_ScrollArea_InnerWidth, 16 * map_width)
+            SetGadgetAttribute(#SCROLLAREA3, #PB_ScrollArea_InnerHeight, 16 * map_height)
+            SetGadgetAttribute(#SCROLLAREA3, #PB_ScrollArea_ScrollStep, 16)
+            ResizeGadget(#CANVAS_LEFT3, 0, 0, 16 * map_width, 16 * map_height)
+            RedrawMap()
+          Case #BUTTON_IMPORT_TILEMAP
+            f$ = OpenFileRequester("Import TileMap...", "", "*.map", 0)
+            
+            If f$ <> ""
+              If GetExtensionPart(f$) = ""
+                f$ = f$ + ".map"
+              EndIf
+              
+              w$ = InputRequester("TileMap Width", "Please input the TileMap Width...", "64", #WINDOW)
+              h$ = InputRequester("TileMap Height", "Please input the TileMap Height...", "64", #WINDOW)
+              
+              map_width = Val(w$)
+              map_height = Val(h$)
+              
+              If map_width > 0 And map_width <= #MAX_MAP_WIDTH
+                If map_height > 0 And map_height <= #MAX_MAP_HEIGHT
+                  SetGadgetText(#SPIN1, w$)
+                  SetGadgetText(#SPIN2, h$)
+                EndIf
+              EndIf
+
+              If ReadFile(1, f$, #PB_Ascii)
+                For y = 0 To map_height - 1
+                  For x = 0 To map_width - 1
+                    byte.a = ReadAsciiCharacter(1)
+                    tilemap(x, y) = ReadAsciiCharacter(1)                   
+                  Next
+                Next
+                
+                CloseFile(1)
+              EndIf
+            EndIf
+            
+            ResetLayer2()
+          Case #BUTTON_EXPORT_TILEMAP
+            f$ = SaveFileRequester("Export TileMap...", "", "*.map", 0)
+            
+            If f$ <> ""
+              If GetExtensionPart(f$) = ""
+                f$ = f$ + ".map"
+              EndIf
+              
+              If CreateFile(1, f$, #PB_Ascii)
+                For y = 0 To map_height - 1
+                  For x = 0 To map_width - 1
+                    byte.a = tilemap(x, y) %00111111
+                    WriteAsciiCharacter(1, 0)
+                    WriteAsciiCharacter(1, byte)
+                  Next
+                Next
+                
+                CloseFile(1)
+              EndIf
+            EndIf
+          Case #CANVAS_LEFT3
+            If GetGadgetAttribute(eg, #PB_Canvas_Buttons) = #PB_Canvas_LeftButton            
+              xm.l = WindowMouseX(#WINDOW)
+              ym.l = WindowMouseY(#WINDOW)
+              
+              If xm >= 0 And ym >= 0
+                xm - GadgetX(eg, #PB_Gadget_WindowCoordinate) - GadgetX(1, #PB_Gadget_WindowCoordinate)
+                ym - GadgetY(eg, #PB_Gadget_WindowCoordinate) - GadgetY(1, #PB_Gadget_WindowCoordinate)
+                
+                xt.l = xm / 16
+                yt.l = ym / 16
+                
+                tilemap(xy, ty) = selected_img
+                RedrawMap()
+              EndIf
+            EndIf
         EndSelect
     EndSelect
     
@@ -749,6 +870,36 @@ Procedure RedrawTiles()
   DrawingMode(#PB_2DDrawing_AllChannels)
   DrawTileBorder(xt * 32, yt * 32, 32, 32)
   StopDrawing()
+  
+  StartDrawing(CanvasOutput(#CANVAS_RIGHT3))
+  Dim c(1)
+  c(0) = RGBA(255, 255, 255, 255)
+  c(1) = RGBA(128, 128, 128, 255)
+  i = 0
+  j = 0
+  For y = 0 To 255 Step 32
+    For x = 0 To 255 Step 32
+      DrawingMode(#PB_2DDrawing_AllChannels)
+      Box(x, y, 32, 32, c(i))
+      DrawingMode(#PB_2DDrawing_AlphaBlend)
+      For y2 = 0 To 7
+        For x2 = 0 To 7
+          xt.l = img(j, x2, y2)
+          sp.l = selpal(selected_img)
+          v.l = xt + (sp * 16)
+          Box(x + (x2 * 4), y + (y2 * 4), 4, 4, paletteL2(v))
+        Next
+      Next
+      i = Mod(i + 1, 2)
+      j + 1
+    Next
+    i = Mod(i + 1, 2)
+  Next
+  yt.l = selected_img / 8
+  xt.l = selected_img - (yt * 8)
+  DrawingMode(#PB_2DDrawing_AllChannels)
+  DrawTileBorder(xt * 32, yt * 32, 32, 32)
+  StopDrawing()
 EndProcedure
 
 Procedure UpdatePalette16()
@@ -761,9 +912,28 @@ Procedure UpdatePalette16()
   StopDrawing()  
 EndProcedure
 
+Procedure RedrawMap()
+  StartDrawing(CanvasOutput(#CANVAS_LEFT3))
+  DrawingMode(#PB_2DDrawing_AllChannels)
+  For y = 0 To map_height - 1
+    For x = 0 To map_width - 1
+      t.l = tilemap(x, y)
+      For y2 = 0 To 7
+        For x2 = 0 To 7
+          xt.l = img(t, x2, y2)
+          sp.l = selpal(t)
+          v.l = xt + (sp * 16)
+          Box((x * 16) + x2, (y * 16) + y2, 16, 16, paletteL2(v))
+        Next
+      Next
+    Next
+  Next
+  StopDrawing()
+EndProcedure
+
 ; IDE Options = PureBasic 6.12 LTS (Windows - x64)
-; CursorPosition = 390
-; FirstLine = 380
+; CursorPosition = 656
+; FirstLine = 648
 ; Folding = --
 ; EnableXP
 ; DPIAware
