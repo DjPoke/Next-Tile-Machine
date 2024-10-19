@@ -64,6 +64,7 @@ Declare RedrawMap()
 #SPIN1 = 31
 #SPIN2 = 32
 #SCROLLAREA3 = 33
+#LABEL = 34
 
 ; vars & arrays
 Global Dim palette.l(#MAX_REAL_PALETTE_COLORS)
@@ -130,6 +131,7 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
   ButtonGadget(#BUTTON_EXPORT_TILEMAP, 532, 40, 100, 20, "Export TileMap")
   SpinGadget(#SPIN1, 532, 80, 100, 20, 1, 256, #PB_Spin_Numeric)
   SpinGadget(#SPIN2, 532, 100, 100, 20, 1, 256, #PB_Spin_Numeric)
+  TextGadget(#LABEL, 64, 256, 128, 25, "", #PB_Text_Border)
   CloseGadgetList()
   
   ; 9 bits palette by default
@@ -688,24 +690,39 @@ If OpenWindow(#WINDOW, 0, 0, 640, 480, "Next Tile Machine " + version$, #PB_Wind
               EndIf
             EndIf
           Case #CANVAS_LEFT3
+            xm.l = WindowMouseX(#WINDOW)
+            ym.l = WindowMouseY(#WINDOW)
+            
             If GetGadgetAttribute(eg, #PB_Canvas_Buttons) = #PB_Canvas_LeftButton            
-              xm.l = WindowMouseX(#WINDOW)
-              ym.l = WindowMouseY(#WINDOW)
-              
               If xm >= 0 And ym >= 0
                 xm - GadgetX(eg, #PB_Gadget_WindowCoordinate) - GadgetX(1, #PB_Gadget_WindowCoordinate)
                 ym - GadgetY(eg, #PB_Gadget_WindowCoordinate) - GadgetY(1, #PB_Gadget_WindowCoordinate)
                 
-                xt.l = xm / 16
-                yt.l = ym / 16
+                xt.l = (xm / 16) + GetGadgetAttribute(#SCROLLAREA3, #PB_ScrollArea_X)
+                yt.l = (ym / 16) + GetGadgetAttribute(#SCROLLAREA3, #PB_ScrollArea_Y)
                 
-                tilemap(xy, ty) = selected_img
+                tilemap(xt, yt) = selected_img
                 RedrawMap()
               EndIf
             EndIf
         EndSelect
     EndSelect
     
+    xm.l = WindowMouseX(#WINDOW)
+    ym.l = WindowMouseY(#WINDOW)
+    
+    xm - GadgetX(#SCROLLAREA3, #PB_Gadget_WindowCoordinate) - GadgetX(1, #PB_Gadget_WindowCoordinate)
+    ym - GadgetY(#SCROLLAREA3, #PB_Gadget_WindowCoordinate) - GadgetY(1, #PB_Gadget_WindowCoordinate)
+    
+    If xm >= 0 And ym >= 0 And xm < GadgetWidth(#SCROLLAREA3) And ym < GadgetHeight(#SCROLLAREA3)
+      xt.l = (xm / 16) + GetGadgetAttribute(#SCROLLAREA3, #PB_ScrollArea_X)
+      yt.l = (ym / 16) + GetGadgetAttribute(#SCROLLAREA3, #PB_ScrollArea_Y)
+      
+      SetGadgetText(#LABEL, Str(xt) + ", " + Str(yt))
+    Else
+      SetGadgetText(#LABEL, "")
+    EndIf
+
     Delay(1)
   ForEver
   
@@ -927,7 +944,7 @@ Procedure RedrawMap()
           xt.l = img(t, x2, y2)
           sp.l = selpal(t)
           v.l = xt + (sp * 16)
-          Box((x * 2) + x2, (y * 2) + y2, 2, 2, paletteL2(v))
+          Box((x * 16) + (x2 * 2), (y * 16) + (y2 * 2), 2, 2, paletteL2(v))
         Next
       Next
     Next
@@ -936,8 +953,8 @@ Procedure RedrawMap()
 EndProcedure
 
 ; IDE Options = PureBasic 6.12 LTS (Windows - x64)
-; CursorPosition = 929
-; FirstLine = 918
+; CursorPosition = 716
+; FirstLine = 705
 ; Folding = --
 ; EnableXP
 ; DPIAware
