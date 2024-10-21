@@ -861,8 +861,14 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
                 If CreateFile(1, p$ + f$ + n$ + e$, #PB_Ascii)
                   For y = 0 To ImageHeight(1) - 1
                     For x = 0 To ImageWidth(1) - 1 
+                      cl1 = Point(x, y)
+                      cl1 = RGB(Red(cl1), Green(cl1), Blue(cl1))
+                      r1.l = Red(cl1) >> 4
+                      g1.l = Green(cl1) >> 4
+                      b1.l = Blue(cl1) >> 4
+                      
                       For d = 0 To 15
-                        For c.a = 0 To 255
+                        For c = 0 To 255
                           ev = WindowEvent()
                           
                           cl2.l = RGB(Red(palette8(c)), Green(palette8(c)), Blue(palette8(c))) & $ffffff
@@ -1243,8 +1249,8 @@ Procedure RedrawScreen()
 EndProcedure
 
 ; IDE Options = PureBasic 6.12 LTS (Windows - x64)
-; CursorPosition = 157
-; FirstLine = 152
+; CursorPosition = 864
+; FirstLine = 848
 ; Folding = --
 ; EnableXP
 ; DPIAware
