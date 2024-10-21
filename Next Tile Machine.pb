@@ -24,7 +24,8 @@ Declare RedrawMap()
 Declare RedrawScreen()
 
 ; constants
-#MAX_REAL_PALETTE_COLORS = 512
+#MAX_REAL_PALETTE_COLORS512 = 512
+#MAX_REAL_PALETTE_COLORS256 = 256
 #MAX_PALETTE_COLORS = 256
 #MAX_TILES_BY_FRAME = 64
 
@@ -76,9 +77,13 @@ Declare RedrawScreen()
 #BUTTON_EXPORT_SCREEN = 38
 #SPIN3 = 39
 #SPIN4 = 40
+#OPTION1 = 41
+#OPTION2 = 42
+#OPTION3 = 43
 
 ; vars & arrays
-Global Dim palette.l(#MAX_REAL_PALETTE_COLORS)
+Global Dim palette9.l(#MAX_REAL_PALETTE_COLORS512)
+Global Dim palette8.l(#MAX_REAL_PALETTE_COLORS256)
 Global Dim paletteL2.l(#MAX_PALETTE_COLORS)
 Global Dim img.l(#MAX_TILES_BY_FRAME, 8, 8)
 Global Dim selpal.l(#MAX_TILES_BY_FRAME)
@@ -150,6 +155,9 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
   CanvasGadget(#CANVAS_LEFT4, 0, 0, 320, 256)
   ButtonGadget(#BUTTON_IMPORT_SCREEN, 328, 0, 100, 20, "Import Screen")
   ButtonGadget(#BUTTON_EXPORT_SCREEN, 328, 20, 100, 20, "Export Screen")
+  OptionGadget(#OPTION1, 328, 60, 100, 20, "No Split")
+  OptionGadget(#OPTION2, 328, 80, 100, 20, "Split 16ko")
+  OptionGadget(#OPTION3, 328, 100, 100, 20, "Split 8ko")
   CloseGadgetList()
   
   ; 9 bits palette by default
@@ -185,6 +193,8 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
   StopDrawing()
   
   RedrawScreen()
+  
+  SetGadgetState(#OPTION1, 1)
   
   Repeat
     ev = WaitWindowEvent(10)
@@ -240,7 +250,11 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
                 ; set left palette color
                 If grabbed_color <> 454 And grabbed_color <> 455
                   If selected_color <> 227
-                    paletteL2(selected_color) = palette(grabbed_color * palette_type)
+                    If palette_type = #PALETTE512
+                      paletteL2(selected_color) = palette9(grabbed_color)
+                    Else
+                      paletteL2(selected_color) = palette8(grabbed_color)
+                    EndIf
                   EndIf
                 EndIf
                 
@@ -250,7 +264,13 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
                 ; clear the selection on old new color (right side)
                 StartDrawing(CanvasOutput(#CANVAS_RIGHT))
                 DrawingMode(#PB_2DDrawing_AllChannels)
-                Box(xt * 8 * palette_type, yt * 16, 8 * palette_type, 16, palette(selected_new_color *  palette_type))
+                pl.l = palette9(selected_new_color)
+                
+                If palette_type = #PALETTE256
+                  pl = palette8(selected_new_color)
+                EndIf
+                
+                Box(xt * 8 * palette_type, yt * 16, 8 * palette_type, 16, pl)
                 StopDrawing()
                 
                 ; update new selection
@@ -320,15 +340,31 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
                   
                   While value_red >= 0 And value_green >= 0 And value_blue >= 0
                     For i = 0 To 511
-                      If value_red = Red(palette(i)) >> 4
-                        If value_green = Green(palette(i)) >> 4
-                          If value_blue = Blue(palette(i)) >> 4
+                      vr.l = Red(palette9(i))
+                      vg.l = Green(palette9(i))
+                      vb.l = Blue(palette9(i))
+                      
+                      If palette_type = #PALETTE256
+                        vr = Red(palette8(i / 2))
+                        vg = Green(palette8(i / 2))
+                        vb = Blue(palette8(i / 2))
+                      EndIf
+                        
+                      If value_red = vr >> 4
+                        If value_green = vg >> 4
+                          If value_blue = vb >> 4
                             yt.l = selected_new_color / 32
                             xt.l = selected_new_color - (yt * 32)
                             
                             StartDrawing(CanvasOutput(#CANVAS_RIGHT))
                             DrawingMode(#PB_2DDrawing_AllChannels)
-                            Box(xt * 8, yt * 16, 8, 16, palette(selected_new_color))
+                            pl.l = palette9(selected_new_color)
+                            
+                            If palette_type = #PALETTE256
+                              pl = palette8(selected_new_color)
+                            EndIf
+                            
+                            Box(xt * 8, yt * 16, 8, 16, pl)
                             StopDrawing()
                             
                             selected_new_color = i
@@ -343,7 +379,13 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
                             ; update left palettes
                             StartDrawing(CanvasOutput(#CANVAS_LEFT))
                             DrawingMode(#PB_2DDrawing_AllChannels)
-                            paletteL2(selected_color) = palette(selected_new_color)
+                            pl.l = palette9(selected_new_color)
+                            
+                            If palette_type = #PALETTE256
+                              pl = palette8(selected_new_color)
+                            EndIf
+                            
+                            paletteL2(selected_color) = pl
                             Box(selectedX * 16, selectedY * 16, 16, 16, paletteL2(selected_color))
                             DrawTileBorder(selectedX * 16, selectedY * 16, 16, 16)
                             StopDrawing()
@@ -407,15 +449,15 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
                     col8.a = ReadAsciiCharacter(1)
                     col1.a = ReadAsciiCharacter(1)
                     col9.w = (col8 << 1) | col1
-                    paletteL2(i) = palette(col9)
+                    paletteL2(i) = palette9(col9)
                   Next
                   
                   palette_type = #PALETTE512
                 ElseIf Lof(1) = 256
                   For i = 0 To 255
                     col8.a = ReadAsciiCharacter(1)
-                    j.l = col8 * 2
-                    paletteL2(i) = palette(j)
+                    j.l = col8
+                    paletteL2(i) = palette8(j)
                   Next
                   
                   palette_type = #PALETTE256
@@ -455,7 +497,7 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
                 If palette_type = #PALETTE512
                   For i = 0 To 255
                     For j = 0 To 511
-                      If paletteL2(i) = palette(j)
+                      If paletteL2(i) = palette9(j)
                         WriteAsciiCharacter(1, (j & %111111110) >> 1)
                         WriteAsciiCharacter(1, j & %00000001)
                         Break
@@ -465,7 +507,7 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
                 Else
                   For i = 0 To 255
                     For j = 0 To 255
-                      If paletteL2(i) = palette(j * 2)
+                      If paletteL2(i) = palette8(j)
                         k.a = j
                         WriteAsciiCharacter(1, k)
                         Break
@@ -786,66 +828,72 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
               f$ = SaveFileRequester("Export Screen...", "*.scn", "Screens|*.scn", 0)
               
               If f$ <> ""
-                If GetExtensionPart(f$) = ""
-                  f$ + ".scn"
-                EndIf
+                e$ = ".scn"
+                p$ = GetPathPart(f$)
+                f$ = GetFilePart(f$, #PB_FileSystem_NoExtension)
+                n$ = ""
                 
                 ; convert to 256 colors
                 err = #False
+                
+                cpt.l = 0
+                cpt2.l = 0
+                
+                mx.l = 0
+                tot.l = ImageWidth(1) * ImageHeight(1)
+                
+                If GetGadgetState(#OPTION1) = 1
+                  mx = ImageWidth(1) * ImageHeight(1)
+                ElseIf GetGadgetState(#OPTION2) = 1
+                  mx = 16384
+                  n$ = "1"
+                ElseIf GetGadgetState(#OPTION3) = 1
+                  mx = 8192
+                  n$ = "1"
+                EndIf
+                
                 StartDrawing(ImageOutput(1))
                 DrawingMode(#PB_2DDrawing_AllChannels)
-                If CreateFile(1, f$, #PB_Ascii)
+                If CreateFile(1, p$ + f$ + n$ + e$, #PB_Ascii)
                   For y = 0 To ImageHeight(1) - 1
-                    For x = 0 To ImageWidth(1) - 1                      
-                      found = #False
-                      
-                      roll.l = 0
-                      
-                      cl1.l = Point(x, y)
-                      r1.l = Red(cl1) >> 4
-                      g1.l = Green(cl1) >> 4
-                      b1.l = Blue(cl1) >> 4
-                      
-                      Repeat
+                    For x = 0 To ImageWidth(1) - 1 
+                      For d = 0 To 15
                         For c = 0 To 255
-                          cl2.l = RGB(Red(palette(c * 2)), Green(palette(c * 2)), Blue(palette(c * 2)))
+                          ev = WindowEvent()
+                          
+                          cl2.l = RGB(Red(palette8(c)), Green(palette8(c)), Blue(palette8(c))) & $ffffff
                           r2.l = Red(cl2) >> 4
                           g2.l = Green(cl2) >> 4
                           b2.l = Blue(cl2) >> 4
-                                                    
-                          If r1 = r2 And g1 = g2 And b1 = b2
-                            found = #True
+                          
+                          dr.l = Abs(r2 - r1)
+                          dg.l = Abs(g2 - g1)
+                          db.l = Abs(b2 - b1)
+                        
+                          If dr >= 0 And dg >= 0 And db >= 0 And dr <= d And dg <= d And db <= d
                             WriteAsciiCharacter(1, c)
+                          
+                            cpt + 1
+                            cpt2 + 1
+                          
+                            If cpt2 = tot
+                              CloseFile(1)
+                              Break(2)
+                            ElseIf cpt = mx
+                              cpt = 0
+                              
+                              If n$ <> ""
+                                n$ = Str(Val(n$) + 1)
+                                CreateFile(1, p$ + f$ + n$ + e$, #PB_Ascii)
+                              EndIf 
+                            EndIf
+                          
                             Break(2)
                           EndIf
                         Next
-                        
-                        If found = #False
-                          Select roll
-                            Case 0
-                              r1 - 1
-                            Case 1
-                              g1 - 1
-                            Case 2
-                              b1 - 1
-                          EndSelect
-                          
-                          roll = Mod(roll + 1, 3)
-                          
-                          If r1 < 0 And g1 < 0 And b1 < 0
-                            err = #True
-                            Break(3)
-                          EndIf
-                          
-                          If r1 < 0 : r1 = 0 : EndIf
-                          If g1 < 0 : g1 = 0 : EndIf
-                          If b1 < 0 : b1 = 0 : EndIf                        
-                        EndIf
-                      ForEver
+                      Next
                     Next
                   Next
-                  
-                  CloseFile(1)
                   
                   If err = #True
                     MessageRequester("Error", "Can't find approximative colors!", #PB_MessageRequester_Error)
@@ -902,7 +950,8 @@ Procedure generate_default_palettes()
   While Round(r, #PB_Round_Nearest) < 256
     While Round(g, #PB_Round_Nearest) < 256
       While Round(b, #PB_Round_Nearest) < 256
-        palette(i) = RGBA(Round(r, #PB_Round_Nearest), Round(g, #PB_Round_Nearest), Round(b, #PB_Round_Nearest), 255)
+        palette9(i) = RGBA(Round(r, #PB_Round_Nearest), Round(g, #PB_Round_Nearest), Round(b, #PB_Round_Nearest), 255)
+        palette8(i/2) = palette9(i)
         i + 1
         b + stp
       Wend
@@ -913,11 +962,11 @@ Procedure generate_default_palettes()
     r + stp
   Wend
   
-  palette(454) = RGBA(0, 0, 0, 0)
-  palette(455) = RGBA(0, 0, 0, 0)
+  palette9(454) = RGBA(0, 0, 0, 0)
+  palette9(455) = RGBA(0, 0, 0, 0)
   
   For i = 0 To 255
-    paletteL2(i) = palette(i * 2)
+    paletteL2(i) = palette8(i)
   Next  
 EndProcedure
 
@@ -967,14 +1016,14 @@ Procedure FillRightPalette()
   If palette_type = #PALETTE512
     For y = 0 To 255 Step 16
       For x = 0 To 255 Step 8
-        Box(x, y, 8, 16, palette(i))
+        Box(x, y, 8, 16, palette9(i))
         i + 1
       Next
     Next
   Else
     For y = 0 To 255 Step 16
       For x = 0 To 255 Step 16
-        Box(x, y, 16, 16, palette(i * palette_type))
+        Box(x, y, 16, 16, palette8(i))
         i + 1
       Next
     Next
@@ -1133,18 +1182,64 @@ Procedure RedrawMap()
 EndProcedure
 
 Procedure RedrawScreen()
+  If IsImage(1) = #False : ProcedureReturn : EndIf
+  
   StartDrawing(CanvasOutput(#CANVAS_LEFT4))
   DrawingMode(#PB_2DDrawing_AllChannels)
-  Box(0, 0, 320, 256, RGBA(0, 0, 0, 255))
-  If IsImage(1)
-    DrawImage(ImageID(1), 0, 0)
-  EndIf
+  Box(0, 0, 320, 256, RGB(0, 0, 0))
+  StopDrawing()
+
+  For y = 0 To ImageHeight(1) - 1
+    For x = 0 To ImageWidth(1) - 1
+      StartDrawing(ImageOutput(1))
+      ; read real color
+      DrawingMode(#PB_2DDrawing_AllChannels)
+      cl1.l = Point(x, y)
+      StopDrawing()
+      
+      r1.a = Red(cl1) >> 4
+      g1.a = Green(cl1) >> 4
+      b1.a = Blue(cl1) >> 4
+                    
+      d.l = 0
+      
+      ; scan colors
+      For d = 0 To 15
+        For c = 0 To 255
+          ev = WindowEvent()
+          
+          cl2.l = RGB(Red(palette8(c)), Green(palette8(c)), Blue(palette8(c)))
+          r2.a = Red(cl2) >> 4
+          g2.a = Green(cl2) >> 4
+          b2.a = Blue(cl2) >> 4
+          
+          dr.l = Abs(r2 - r1)
+          dg.l = Abs(g2 - g1)
+          db.l = Abs(b2 - b1)
+          
+          If dr >= 0 And dg >=0 And db >= 0 And dr <= d And dg <= d And db <= d
+            StartDrawing(ImageOutput(1))
+            DrawingMode(#PB_2DDrawing_AllChannels)
+            Plot(x, y, palette8(c) & $ffffffff)
+            StopDrawing()
+            
+            StartDrawing(CanvasOutput(#CANVAS_LEFT4))
+            DrawingMode(#PB_2DDrawing_AllChannels)
+            Plot(x, y, palette8(c))
+            StopDrawing()
+            
+            Break(2)
+          EndIf
+        Next                
+      Next
+    Next
+  Next
   StopDrawing()
 EndProcedure
 
 ; IDE Options = PureBasic 6.12 LTS (Windows - x64)
-; CursorPosition = 836
-; FirstLine = 830
+; CursorPosition = 862
+; FirstLine = 850
 ; Folding = --
 ; EnableXP
 ; DPIAware
