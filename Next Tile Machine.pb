@@ -153,7 +153,7 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
   CheckBoxGadget(#CHECKBOX, 128, 256, 128, 20, "Export 2 bytes")
   AddGadgetItem(#PANEL, -1, "Screens")
   CanvasGadget(#CANVAS_LEFT4, 0, 0, 320, 256)
-  ButtonGadget(#BUTTON_IMPORT_SCREEN, 328, 0, 100, 20, "Import Screen")
+  ButtonGadget(#BUTTON_IMPORT_SCREEN, 328, 0, 100, 20, "Import Image")
   ButtonGadget(#BUTTON_EXPORT_SCREEN, 328, 20, 100, 20, "Export Screen")
   OptionGadget(#OPTION1, 328, 60, 100, 20, "No Split")
   OptionGadget(#OPTION2, 328, 80, 100, 20, "Split 16ko")
@@ -1238,8 +1238,8 @@ Procedure RedrawScreen()
 EndProcedure
 
 ; IDE Options = PureBasic 6.12 LTS (Windows - x64)
-; CursorPosition = 862
-; FirstLine = 850
+; CursorPosition = 155
+; FirstLine = 152
 ; Folding = --
 ; EnableXP
 ; DPIAware
