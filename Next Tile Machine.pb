@@ -153,8 +153,8 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
   CheckBoxGadget(#CHECKBOX, 128, 256, 128, 20, "Export 2 bytes")
   AddGadgetItem(#PANEL, -1, "Screens")
   CanvasGadget(#CANVAS_LEFT4, 0, 0, 320, 256)
-  ButtonGadget(#BUTTON_IMPORT_SCREEN, 328, 0, 100, 20, "Import Image")
-  ButtonGadget(#BUTTON_EXPORT_SCREEN, 328, 20, 100, 20, "Export Screen")
+  ButtonGadget(#BUTTON_IMPORT_SCREEN, 328, 0, 100, 25, "Import Image")
+  ButtonGadget(#BUTTON_EXPORT_SCREEN, 328, 25, 100, 25, "Export Screen")
   OptionGadget(#OPTION1, 328, 60, 100, 20, "No Split")
   OptionGadget(#OPTION2, 328, 80, 100, 20, "Split 16ko")
   OptionGadget(#OPTION3, 328, 100, 100, 20, "Split 8ko")
@@ -245,25 +245,27 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
                 yt.l = Round(ym / 16, #PB_Round_Down)
                 
                 ; grab future new color
-                grabbed_color.l = (xt + (yt * 32 / palette_type))
+                grabbed_color.l = (xt + (yt * (32 / palette_type)))
                 
                 ; set left palette color
                 If grabbed_color <> 454 And grabbed_color <> 455
                   If selected_color <> 227
-                    If palette_type = #PALETTE512
-                      paletteL2(selected_color) = palette9(grabbed_color)
-                    Else
+                    ; palette 512 ?
+                    paletteL2(selected_color) = palette9(grabbed_color)
+                    
+                    If palette_type = #PALETTE256
                       paletteL2(selected_color) = palette8(grabbed_color)
                     EndIf
                   EndIf
                 EndIf
                 
                 yt.l = selected_new_color / (32 / palette_type)
-                xt.l = selected_new_color - (yt * 32 / palette_type)
-                
+                xt.l = selected_new_color - (yt * (32 / palette_type))
+                                
                 ; clear the selection on old new color (right side)
                 StartDrawing(CanvasOutput(#CANVAS_RIGHT))
                 DrawingMode(#PB_2DDrawing_AllChannels)
+                
                 pl.l = palette9(selected_new_color)
                 
                 If palette_type = #PALETTE256
@@ -276,7 +278,7 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
                 ; update new selection
                 selected_new_color = grabbed_color
                 yt.l = selected_new_color / (32 / palette_type)
-                xt.l = selected_new_color - (yt * 32 / palette_type)
+                xt.l = selected_new_color - (yt * (32 / palette_type))
                 
                 ; draw new selection (right side)
                 StartDrawing(CanvasOutput(#CANVAS_RIGHT))
@@ -361,7 +363,7 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
                             pl.l = palette9(selected_new_color)
                             
                             If palette_type = #PALETTE256
-                              pl = palette8(selected_new_color)
+                              pl = palette8(selected_new_color / 2)
                             EndIf
                             
                             Box(xt * 8, yt * 16, 8, 16, pl)
@@ -382,7 +384,7 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
                             pl.l = palette9(selected_new_color)
                             
                             If palette_type = #PALETTE256
-                              pl = palette8(selected_new_color)
+                              pl = palette8(selected_new_color / 2)
                             EndIf
                             
                             paletteL2(selected_color) = pl
@@ -417,6 +419,8 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
               MessageRequester("Error", "Missing $ before hexa number!", #PB_MessageRequester_Error)
             EndIf
             
+            FillRightPalette()
+            ResetLayer2()
             RedrawTiles()
             RedrawMap()
           Case #BUTTON3
@@ -432,7 +436,7 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
             EndIf
             
             FillRightPalette()
-            ResetLayer2()                        
+            ResetLayer2()
             RedrawTiles()
             RedrawMap()
           Case #BUTTON_IMPORT_PALETTE
@@ -858,7 +862,7 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
                   For y = 0 To ImageHeight(1) - 1
                     For x = 0 To ImageWidth(1) - 1 
                       For d = 0 To 15
-                        For c = 0 To 255
+                        For c.a = 0 To 255
                           ev = WindowEvent()
                           
                           cl2.l = RGB(Red(palette8(c)), Green(palette8(c)), Blue(palette8(c))) & $ffffff
@@ -964,6 +968,7 @@ Procedure generate_default_palettes()
   
   palette9(454) = RGBA(0, 0, 0, 0)
   palette9(455) = RGBA(0, 0, 0, 0)
+  palette8(227) = RGBA(0, 0, 0, 0)
   
   For i = 0 To 255
     paletteL2(i) = palette8(i)
@@ -1238,7 +1243,7 @@ Procedure RedrawScreen()
 EndProcedure
 
 ; IDE Options = PureBasic 6.12 LTS (Windows - x64)
-; CursorPosition = 155
+; CursorPosition = 157
 ; FirstLine = 152
 ; Folding = --
 ; EnableXP
