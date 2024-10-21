@@ -7,6 +7,10 @@
 ;
 ;===================
 
+UsePNGImageDecoder()
+UseJPEGImageDecoder()
+UseGIFImageDecoder()
+
 ; declarations
 Declare generate_default_palettes()
 Declare ResetLayer2()
@@ -17,6 +21,7 @@ Declare RedrawTiles()
 Declare UpdatePalette16()
 Declare RedrawTileView()
 Declare RedrawMap()
+Declare RedrawScreen()
 
 ; constants
 #MAX_REAL_PALETTE_COLORS = 512
@@ -66,6 +71,11 @@ Declare RedrawMap()
 #SCROLLAREA3 = 33
 #LABEL = 34
 #CHECKBOX = 35
+#CANVAS_LEFT4 = 36
+#BUTTON_IMPORT_SCREEN = 37
+#BUTTON_EXPORT_SCREEN = 38
+#SPIN3 = 39
+#SPIN4 = 40
 
 ; vars & arrays
 Global Dim palette.l(#MAX_REAL_PALETTE_COLORS)
@@ -93,7 +103,7 @@ Global map_height.l
 generate_default_palettes()
 
 ; program version
-version$ = "v0.1.1"
+version$ = "v0.2.0"
 
 ; open the window
 If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Window_ScreenCentered|#PB_Window_MinimizeGadget)
@@ -132,8 +142,14 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
   ButtonGadget(#BUTTON_EXPORT_TILEMAP, 532, 40, 100, 20, "Export TileMap")
   SpinGadget(#SPIN1, 532, 80, 100, 20, 1, 256, #PB_Spin_Numeric)
   SpinGadget(#SPIN2, 532, 100, 100, 20, 1, 256, #PB_Spin_Numeric)
+  SpinGadget(#SPIN3, 532, 140, 100, 20, 1, 256, #PB_Spin_Numeric)
+  SpinGadget(#SPIN4, 532, 160, 100, 20, 1, 256, #PB_Spin_Numeric)
   TextGadget(#LABEL, 0, 256, 128, 25, "", #PB_Text_Border)
   CheckBoxGadget(#CHECKBOX, 128, 256, 128, 20, "Export 2 bytes")
+  AddGadgetItem(#PANEL, -1, "Screens")
+  CanvasGadget(#CANVAS_LEFT4, 0, 0, 320, 256)
+  ButtonGadget(#BUTTON_IMPORT_SCREEN, 328, 0, 100, 20, "Import Screen")
+  ButtonGadget(#BUTTON_EXPORT_SCREEN, 328, 20, 100, 20, "Export Screen")
   CloseGadgetList()
   
   ; 9 bits palette by default
@@ -160,10 +176,15 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
   DisableGadget(#SPIN1, #True)
   DisableGadget(#SPIN2, #True)
   
+  SetGadgetText(#SPIN3, "40")
+  SetGadgetText(#SPIN4, "32")
+
   StartDrawing(CanvasOutput(#CANVAS_DOWN2))
   DrawingMode(#PB_2DDrawing_AllChannels)
   DrawTileBorder(selected_pen * 16, 0, 16, 16)
   StopDrawing()
+  
+  RedrawScreen()
   
   Repeat
     ev = WaitWindowEvent(10)
@@ -262,12 +283,15 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
                 
                 ; update palette 16
                 UpdatePalette16()
+                RedrawTiles()
+                RedrawMap()
               EndIf
             EndIf
           Case #BUTTON1
             generate_default_palettes()
             ResetLayer2()
             RedrawTiles()
+            RedrawMap()
             UpdatePalette16()
           Case #BUTTON2
             hexa_color.s = GetGadgetText(#STRING)
@@ -350,6 +374,9 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
             Else
               MessageRequester("Error", "Missing $ before hexa number!", #PB_MessageRequester_Error)
             EndIf
+            
+            RedrawTiles()
+            RedrawMap()
           Case #BUTTON3
             generate_default_palettes()
             ResetLayer2()
@@ -363,9 +390,11 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
             EndIf
             
             FillRightPalette()
-            ResetLayer2()
+            ResetLayer2()                        
+            RedrawTiles()
+            RedrawMap()
           Case #BUTTON_IMPORT_PALETTE
-            f$ = OpenFileRequester("Import Palette...", "", "*.pal", 0)
+            f$ = OpenFileRequester("Import Palette...", "*.pal", "Palettes|*.pal", 0)
             
             If f$ <> ""
               If GetExtensionPart(f$) = ""
@@ -408,13 +437,14 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
                 selected_img = 0
                 selected_pen = 0
                 RedrawTiles()
+                RedrawMap()
                 UpdatePalette16()
               EndIf
             EndIf
             
             ResetLayer2()
           Case #BUTTON_EXPORT_PALETTE
-            f$ = SaveFileRequester("Export Palette...", "", "*.pal", 0)
+            f$ = SaveFileRequester("Export Palette...", "*.pal", "Palettes|*.pal", 0)
             
             If f$ <> ""
               If GetExtensionPart(f$) = ""
@@ -508,7 +538,7 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
               EndIf
             EndIf
           Case #BUTTON_IMPORT_TILES
-            f$ = OpenFileRequester("Import Tiles...", "", "*.spr", 0)
+            f$ = OpenFileRequester("Import Tiles...", "*.til", "Sprites|*.til", 0)
             
             If f$ <> ""
               If GetExtensionPart(f$) = ""
@@ -536,7 +566,7 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
             
             ResetLayer2()
           Case #BUTTON_EXPORT_TILES
-            f$ = SaveFileRequester("Export Tiles...", "", "*.spr", 0)
+            f$ = SaveFileRequester("Export Tiles...", "*.til", "Sprites|*.til", 0)
             
             If f$ <> ""
               If GetExtensionPart(f$) = ""
@@ -651,7 +681,7 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
             ResizeGadget(#CANVAS_LEFT3, 0, 0, 16 * map_width, 16 * map_height)
             RedrawMap()
           Case #BUTTON_IMPORT_TILEMAP
-            f$ = OpenFileRequester("Import TileMap...", "", "*.map", 0)
+            f$ = OpenFileRequester("Import TileMap...", "*.map", "TileMaps|*.map", 0)
             
             If f$ <> ""
               If GetExtensionPart(f$) = ""
@@ -701,7 +731,7 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
             ResizeGadget(#CANVAS_LEFT3, 0, 0, 16 * map_width, 16 * map_height)
             RedrawMap()
           Case #BUTTON_EXPORT_TILEMAP
-            f$ = SaveFileRequester("Export TileMap...", "", "*.map", 0)
+            f$ = SaveFileRequester("Export TileMap...", "*.map", "TileMaps|*.map", 0)
             
             If f$ <> ""
               If GetExtensionPart(f$) = ""
@@ -739,6 +769,99 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
                 RedrawMap()
               EndIf
             EndIf
+          Case #BUTTON_IMPORT_SCREEN
+            f$ = OpenFileRequester("Import Picture...", "*.png", "Pictures|*.png|*.bmp|*.gif|*.jpg", 0)
+            
+            If f$ <> ""
+              LoadImage(1, f$)
+              
+              If ImageWidth(1) > 320 Or ImageHeight(1) > 256
+                MessageRequester("Error", "Maximum size for 256 colors screens: 320x256", #PB_MessageRequester_Error)
+              Else
+                RedrawScreen()
+              EndIf
+            EndIf
+          Case #BUTTON_EXPORT_SCREEN
+            If IsImage(1)
+              f$ = SaveFileRequester("Export Screen...", "*.scn", "Screens|*.scn", 0)
+              
+              If f$ <> ""
+                If GetExtensionPart(f$) = ""
+                  f$ + ".scn"
+                EndIf
+                
+                ; convert to 256 colors
+                err = #False
+                StartDrawing(ImageOutput(1))
+                DrawingMode(#PB_2DDrawing_AllChannels)
+                If CreateFile(1, f$, #PB_Ascii)
+                  For y = 0 To ImageHeight(1) - 1
+                    For x = 0 To ImageWidth(1) - 1                      
+                      found = #False
+                      
+                      roll.l = 0
+                      
+                      cl1.l = Point(x, y)
+                      r1.l = Red(cl1) >> 4
+                      g1.l = Green(cl1) >> 4
+                      b1.l = Blue(cl1) >> 4
+                      
+                      Repeat
+                        For c = 0 To 255
+                          cl2.l = RGB(Red(palette(c * 2)), Green(palette(c * 2)), Blue(palette(c * 2)))
+                          r2.l = Red(cl2) >> 4
+                          g2.l = Green(cl2) >> 4
+                          b2.l = Blue(cl2) >> 4
+                                                    
+                          If r1 = r2 And g1 = g2 And b1 = b2
+                            found = #True
+                            WriteAsciiCharacter(1, c)
+                            Break(2)
+                          EndIf
+                        Next
+                        
+                        If found = #False
+                          Select roll
+                            Case 0
+                              r1 - 1
+                            Case 1
+                              g1 - 1
+                            Case 2
+                              b1 - 1
+                          EndSelect
+                          
+                          roll = Mod(roll + 1, 3)
+                          
+                          If r1 < 0 And g1 < 0 And b1 < 0
+                            err = #True
+                            Break(3)
+                          EndIf
+                          
+                          If r1 < 0 : r1 = 0 : EndIf
+                          If g1 < 0 : g1 = 0 : EndIf
+                          If b1 < 0 : b1 = 0 : EndIf                        
+                        EndIf
+                      ForEver
+                    Next
+                  Next
+                  
+                  CloseFile(1)
+                  
+                  If err = #True
+                    MessageRequester("Error", "Can't find approximative colors!", #PB_MessageRequester_Error)
+                  EndIf
+                Else
+                  MessageRequester("Error", "Can't create file for write!", #PB_MessageRequester_Error)
+                EndIf
+                StopDrawing()
+              EndIf
+            Else
+              MessageRequester("Error", "Import a screen image first!", #PB_MessageRequester_Error)
+            EndIf
+          Case #SPIN3
+            RedrawMap()
+          Case #SPIN4
+            RedrawMap()
         EndSelect
     EndSelect
     
@@ -983,12 +1106,45 @@ Procedure RedrawMap()
       Next
     Next
   Next
+  
+  sw.l = map_width * 16
+  sh.l = map_height * 16
+  stpw.l = Val(GetGadgetText(#SPIN3)) * 16
+  stph.l = Val(GetGadgetText(#SPIN4)) * 16
+  
+  x = 0
+  y = 0
+  
+  If stpw > 0 And stph > 0
+    While y < sh
+      While x < sw
+        Line(x, y, stpw, 1, RGB(0, 255, 0))
+        Line(x + stpw - 1, y, 1, stph, RGB(0, 255, 0))
+        Line(x + stpw - 1, y + stph - 1, stpw, 1, RGB(0, 255, 0))
+        Line(x, y + stph - 1, 1, stph, RGB(0, 255, 0))
+        
+        x + stpw
+      Wend
+      x = 0
+      y + stph
+    Wend
+  EndIf
+  StopDrawing()
+EndProcedure
+
+Procedure RedrawScreen()
+  StartDrawing(CanvasOutput(#CANVAS_LEFT4))
+  DrawingMode(#PB_2DDrawing_AllChannels)
+  Box(0, 0, 320, 256, RGBA(0, 0, 0, 255))
+  If IsImage(1)
+    DrawImage(ImageID(1), 0, 0)
+  EndIf
   StopDrawing()
 EndProcedure
 
 ; IDE Options = PureBasic 6.12 LTS (Windows - x64)
-; CursorPosition = 326
-; FirstLine = 311
+; CursorPosition = 836
+; FirstLine = 830
 ; Folding = --
 ; EnableXP
 ; DPIAware
