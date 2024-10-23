@@ -440,6 +440,8 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
             RedrawTiles()
             RedrawMap()
           Case #BUTTON_IMPORT_PALETTE
+            DisableGadget(#CANVAS_LEFT, #True)
+            
             f$ = OpenFileRequester("Import Palette...", "*.pal", "Palettes|*.pal", 0)
             
             If f$ <> ""
@@ -488,8 +490,11 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
               EndIf
             EndIf
             
+            DisableGadget(#CANVAS_LEFT, #False)
             ResetLayer2()
           Case #BUTTON_EXPORT_PALETTE
+            DisableGadget(#CANVAS_LEFT, #True)
+            
             f$ = SaveFileRequester("Export Palette...", "*.pal", "Palettes|*.pal", 0)
             
             If f$ <> ""
@@ -523,6 +528,8 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
                 CloseFile(1)
               EndIf
             EndIf
+            
+            DisableGadget(#CANVAS_LEFT, #False)
           Case #SCROLLBAR1
             selected_palette16 = GetGadgetState(#SCROLLBAR1)
             selpal(selected_img) = selected_palette16
@@ -565,6 +572,7 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
                 
                 img(selected_img, xt, yt) = selected_pen
                 RedrawTiles()
+                RedrawMap()
               EndIf
             EndIf
           Case #CANVAS_RIGHT2, #CANVAS_RIGHT3
@@ -584,6 +592,8 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
               EndIf
             EndIf
           Case #BUTTON_IMPORT_TILES
+            DisableGadget(#CANVAS_LEFT2, #True)
+            
             f$ = OpenFileRequester("Import Tiles...", "*.til", "Sprites|*.til", 0)
             
             If f$ <> ""
@@ -610,8 +620,13 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
               EndIf
             EndIf
             
+            DisableGadget(#CANVAS_LEFT2, #False)
             ResetLayer2()
+            RedrawTiles()
+            RedrawMap()
           Case #BUTTON_EXPORT_TILES
+            DisableGadget(#CANVAS_LEFT2, #True)
+            
             f$ = SaveFileRequester("Export Tiles...", "*.til", "Sprites|*.til", 0)
             
             If f$ <> ""
@@ -632,6 +647,10 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
                 CloseFile(1)
               EndIf
             EndIf
+            
+            DisableGadget(#CANVAS_LEFT2, #False)
+            RedrawTiles()
+            RedrawMap()
           Case #BUTTON6
             For y = 0 To 7
               For x = 0 To 7
@@ -641,6 +660,7 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
             Next
             
             RedrawTiles()
+            RedrawMap()
           Case #BUTTON7
             ClearClipboard()
             
@@ -657,6 +677,7 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
             Next
             
             RedrawTiles()
+            RedrawMap()
           Case #BUTTON9
             For y = 0 To 7
               For x = 0 To 7
@@ -665,6 +686,7 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
             Next
             
             RedrawTiles()
+            RedrawMap()
           Case #BUTTON10
             For y = 0 To 7
               For x = 0 To 7
@@ -679,6 +701,7 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
             Next
             
             RedrawTiles()
+            RedrawMap()
           Case #BUTTON11
             For y = 0 To 7
               For x = 0 To 3
@@ -690,6 +713,7 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
             Next
             
             RedrawTiles()
+            RedrawMap()
           Case #BUTTON12
             For x = 0 To 7
               For y = 0 To 3
@@ -701,6 +725,7 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
             Next
             
             RedrawTiles()
+            RedrawMap()
           Case #BUTTON13
             w$ = InputRequester("TileMap Width", "Please input the TileMap Width...", "64", #WINDOW)
             h$ = InputRequester("TileMap Height", "Please input the TileMap Height...", "64", #WINDOW)
@@ -727,6 +752,8 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
             ResizeGadget(#CANVAS_LEFT3, 0, 0, 16 * map_width, 16 * map_height)
             RedrawMap()
           Case #BUTTON_IMPORT_TILEMAP
+            DisableGadget(#CANVAS_LEFT3, #True)
+            
             f$ = OpenFileRequester("Import TileMap...", "*.map", "TileMaps|*.map", 0)
             
             If f$ <> ""
@@ -776,7 +803,11 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
             SetGadgetAttribute(#SCROLLAREA3, #PB_ScrollArea_ScrollStep, 16)
             ResizeGadget(#CANVAS_LEFT3, 0, 0, 16 * map_width, 16 * map_height)
             RedrawMap()
+            
+            DisableGadget(#CANVAS_LEFT3, #False)
           Case #BUTTON_EXPORT_TILEMAP
+            DisableGadget(#CANVAS_LEFT3, #True)
+
             f$ = SaveFileRequester("Export TileMap...", "*.map", "TileMaps|*.map", 0)
             
             If f$ <> ""
@@ -799,11 +830,15 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
                 CloseFile(1)
               EndIf
             EndIf
+            
+            DisableGadget(#CANVAS_LEFT3, #False)
+            RedrawTiles()
+            RedrawMap()
           Case #CANVAS_LEFT3
             xm.l = WindowMouseX(#WINDOW)
             ym.l = WindowMouseY(#WINDOW)
             
-            If GetGadgetAttribute(eg, #PB_Canvas_Buttons) = #PB_Canvas_LeftButton            
+            If GetGadgetAttribute(eg, #PB_Canvas_Buttons) = #PB_Canvas_LeftButton
               If xm >= 0 And ym >= 0
                 xm - GadgetX(eg, #PB_Gadget_WindowCoordinate) - GadgetX(1, #PB_Gadget_WindowCoordinate)
                 ym - GadgetY(eg, #PB_Gadget_WindowCoordinate) - GadgetY(1, #PB_Gadget_WindowCoordinate)
@@ -812,6 +847,19 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
                 yt.l = (ym / 16)
                 
                 tilemap(xt, yt) = selected_img
+                RedrawMap()
+              EndIf
+            EndIf
+            
+            If GetGadgetAttribute(eg, #PB_Canvas_Buttons) = #PB_Canvas_RightButton
+              If xm >= 0 And ym >= 0
+                xm - GadgetX(eg, #PB_Gadget_WindowCoordinate) - GadgetX(1, #PB_Gadget_WindowCoordinate)
+                ym - GadgetY(eg, #PB_Gadget_WindowCoordinate) - GadgetY(1, #PB_Gadget_WindowCoordinate)
+                
+                xt.l = (xm / 16)
+                yt.l = (ym / 16)
+                
+                tilemap(xt, yt) = 0
                 RedrawMap()
               EndIf
             EndIf
@@ -1249,8 +1297,8 @@ Procedure RedrawScreen()
 EndProcedure
 
 ; IDE Options = PureBasic 6.12 LTS (Windows - x64)
-; CursorPosition = 864
-; FirstLine = 848
+; CursorPosition = 861
+; FirstLine = 833
 ; Folding = --
 ; EnableXP
 ; DPIAware
