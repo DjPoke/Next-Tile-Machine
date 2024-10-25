@@ -108,7 +108,7 @@ Global map_height.l
 generate_default_palettes()
 
 ; program version
-version$ = "v0.2.0"
+version$ = "v1.0"
 
 ; open the window
 If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Window_ScreenCentered|#PB_Window_MinimizeGadget)
@@ -1297,8 +1297,8 @@ Procedure RedrawScreen()
 EndProcedure
 
 ; IDE Options = PureBasic 6.12 LTS (Windows - x64)
-; CursorPosition = 981
-; FirstLine = 967
+; CursorPosition = 110
+; FirstLine = 106
 ; Folding = --
 ; EnableXP
 ; DPIAware
