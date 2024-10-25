@@ -978,8 +978,8 @@ If OpenWindow(#WINDOW, 0, 0, 640, 325, "Next Tile Machine " + version$, #PB_Wind
     ym - GadgetY(#SCROLLAREA3, #PB_Gadget_WindowCoordinate) - GadgetY(1, #PB_Gadget_WindowCoordinate)
     
     If xm >= 0 And ym >= 0 And xm < GadgetWidth(#SCROLLAREA3) And ym < GadgetHeight(#SCROLLAREA3)
-      xt.l = (xm / 16) + GetGadgetAttribute(#SCROLLAREA3, #PB_ScrollArea_X)
-      yt.l = (ym / 16) + GetGadgetAttribute(#SCROLLAREA3, #PB_ScrollArea_Y)
+      xt.l = (xm + GetGadgetAttribute(#SCROLLAREA3, #PB_ScrollArea_X)) / 16
+      yt.l = (ym + GetGadgetAttribute(#SCROLLAREA3, #PB_ScrollArea_Y)) / 16
       
       SetGadgetText(#LABEL, Str(xt) + ", " + Str(yt))
     Else
@@ -1297,8 +1297,8 @@ Procedure RedrawScreen()
 EndProcedure
 
 ; IDE Options = PureBasic 6.12 LTS (Windows - x64)
-; CursorPosition = 861
-; FirstLine = 833
+; CursorPosition = 981
+; FirstLine = 967
 ; Folding = --
 ; EnableXP
 ; DPIAware
